@@ -1,4 +1,9 @@
 ; ===========================================================
+; 【補足】
+; ・SendText()はIMEをバイパスして直接文字を入力するため、IME ONでも半角で入力される。
+;   IMEの通常動作（全角/ひらがな/カタカナ等）を活かしたい場合はSendを使う。
+; ・AutoHotKeyで特殊記号（^ + { } ' " \ など）を送信する場合は、Send "{記号}" のように波括弧で囲む必要がある。
+;   例：Send "{^}"、Send "{+}"、Send "{{}"、Send "{}}" など。
 ; 【キーボード入力レイヤー整理】
 ;
 ; 1. Scan Code (SC: スキャンコード)
@@ -27,7 +32,6 @@
 
 #Requires AutoHotkey v2.0
 #SingleInstance Force
-
 global usMode := false
 
 ^!u:: {
@@ -36,101 +40,109 @@ global usMode := false
     TrayTip "US配列エミュレーション → " (usMode ? "ON" : "OFF")
 }
 
-; --- US配列エミュ（ON時だけ有効）---
+;vkE2:: return    ; Copilotキー（MS IME/ATOK等で使われる場合あり）
 
+#HotIf !usMode
+; USモードがオフの時 カタカナ、変換、無変換キーを無効化
+vkF1:: return    ; カタカナキー
+vk0C:: return    ; 変換キー
+vk0D:: return    ; 無変換キー
+#HotIf
+
+; --- US配列エミュ（ON時だけ有効）---
 #HotIf usMode
 
 ; --- 数字 Shift 記号 を変換(VK + SC )
-; shift 2　⇒ @
-+vk32:: SendText("@")
-+sc003:: SendText("@")
+; shift 2 ⇒ @
++vk32:: Send "@"
++sc003:: Send "@"
 
-+vk36:: SendText("^")
-+sc007:: SendText("^")  ; 6
++vk36:: Send "{^}"
++sc007:: Send "{^}"  ; 6
 
-+vk37:: SendText("&")
-+sc008:: SendText("&")  ; 7
-+vk38:: SendText("*")
-+sc009:: SendText("*")  ; 8
++vk37:: Send "&"
++sc008:: Send "&"  ; 7
++vk38:: Send "*"
++sc009:: Send "*"  ; 8
 
-+vk39:: SendText("(")
-+sc00A:: SendText("(")  ; 9
++vk39:: Send "("
++sc00A:: Send "("  ; 9
 
-+vk30:: SendText(")")
-+sc00B:: SendText(")")  ; 0
++vk30:: Send ")"
++sc00B:: Send ")"  ; 0
 
 ; --- 記号キー群（必要分のみ抜粋。こちらも SendText 推奨）---
 ; ; :
-vkBA:: SendText(";")
-+vkBA:: SendText(":")
-sc027:: SendText(";")
-+sc027:: SendText(":")
+vkBA:: Send ";"
++vkBA:: Send ":"
+sc027:: Send ";"
++sc027:: Send ":"
 
 ; / ?
-vkBF:: SendText("/")
-+vkBF:: SendText("?")
-sc035:: SendText("/")
-+sc035:: SendText("?")
+vkBF:: Send "/"
++vkBF:: Send "?"
+sc035:: Send "/"
++sc035:: Send "?"
 
 ; - _
-vkBD:: SendText("-")
-+vkBD:: SendText("_")
-sc00C:: SendText("-")
-+sc00C:: SendText("_")
+vkBD:: Send "-"
++vkBD:: Send "_"
+sc00C:: Send "-"
++sc00C:: Send "_"
 
 ; [ {
-vkDB:: SendText("[")
-+vkDB:: SendText("{")
-sc01A:: SendText("[")
-+sc01A:: SendText("{")
+vkDB:: Send "["
++vkDB:: Send "{{}"
+sc01A:: Send "["
++sc01A:: Send "{{}"
 
 ; ] }
-vkDD:: SendText("]")
-+vkDD:: SendText("}")
-sc01B:: SendText("]")
-+sc01B:: SendText("}")
+vkDD:: Send "]"
++vkDD:: Send "{}}"
+sc01B:: Send "]"
++sc01B:: Send "{}}"
 
 ; \ |   （JISの￥キー位置）
-vkDC:: SendText("\")
-+vkDC:: SendText("|")
-sc02B:: SendText("\")
-+sc02B:: SendText("|")
+vkDC:: Send "\"
++vkDC:: Send "|"
+sc02B:: Send "\"
++sc02B:: Send "|"
 
 ; ' "
-vkDE:: SendText("'")
-+vkDE:: SendText('"')
-sc028:: SendText("'")
-+sc028:: SendText('"')
+vkDE:: Send "'"
++vkDE:: Send '"'
+sc028:: Send "'"
++sc028:: Send '"'
 
 ; = +
-vkBB:: SendText("=")
-+vkBB:: SendText("+")
-sc00D:: SendText("=")
-+sc00D:: SendText("+")
+vkBB:: Send "="
++vkBB:: Send "{+}"
+sc00D:: Send "="
++sc00D:: Send "{+}"
 
 ; , <
-vkBC:: SendText(",")
-+vkBC:: SendText("<")
-sc033:: SendText(",")
-+sc033:: SendText("<")
+vkBC:: Send ","
++vkBC:: Send "<"
+sc033:: Send ","
++sc033:: Send "<"
 
 ; . >
-vkBE:: SendText(".")
-+vkBE:: SendText(">")
-sc034:: SendText(".")
-+sc034:: SendText(">")
+vkBE:: Send "."
++vkBE:: Send ">"
+sc034:: Send "."
++sc034:: Send ">"
 
 ; JIS専用キー（vkE2）→ \ と _
 ; USキーボードの \ キーは一般的に sc056 だが機種依存で違う可能性もある
-vkE2:: SendText("\")
-+vkE2:: SendText("_")
-sc056:: SendText("\")
-+sc056:: SendText("_")
+vkE2:: Send "\"
++vkE2:: Send "_"
+sc056:: Send "\"
++sc056:: Send "_"
 
 ; ` / ~（Escの下のUSキー）
-vkC0:: SendText("``")    ; ` （バッククォート）
-+vkC0:: SendText("~")     ; Shift+` → ~
-sc029:: SendText("``")
-+sc029:: SendText("~")
+vkC0:: Send "``"    ; ` （バッククォート）
++vkC0:: Send "~"     ; Shift+` → ~
+sc029:: Send "``"
++sc029:: Send "~"
 
 #HotIf
